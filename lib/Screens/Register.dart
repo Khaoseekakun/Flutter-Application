@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:get/instance_manager.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,7 +12,13 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _passwordVisible = false;
-  final TextEditingController _userPassworController = TextEditingController();
+  bool _isLoading = false;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
@@ -19,43 +26,102 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordVisible = false;
   }
 
+  Future<void> _onRegister() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
+    final confirm = _confirmController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    // 🧠 Validate input fields
+    if (name.isEmpty ||
+        email.isEmpty ||
+        pass.isEmpty ||
+        confirm.isEmpty ||
+        phone.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please fill all fields',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+    if (pass != confirm) {
+      Get.snackbar(
+        'Error',
+        'Passwords do not match',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://45.154.27.155:5179/api/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "username": name,
+          "email": email,
+          "password": pass,
+          "phone": phone,
+          "fullname": name,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // ✅ Registration successful
+        final data = jsonDecode(response.body);
+
+        Get.snackbar(
+          'Success',
+          'Account created successfully!',
+          backgroundColor: Colors.green.shade400,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+
+        // Optional: navigate to login screen
+        Future.delayed(const Duration(seconds: 1), () {
+          Get.offAllNamed('/login');
+        });
+      } else {
+        // ❌ Server returned an error
+        String message = 'Registration failed';
+        try {
+          final body = jsonDecode(response.body);
+          message = body['message'] ?? message;
+        } catch (_) {}
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+      }
+    } catch (e) {
+      // ❌ Connection or parsing error
+      Get.snackbar(
+        'Error',
+        'Failed to connect to server: $e',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final confirmController = TextEditingController();
     final size = MediaQuery.of(context).size;
-
-    void _onRegister() {
-      final name = nameController.text.trim();
-      final email = emailController.text.trim();
-      final pass = _userPassworController.text;
-      final confirm = confirmController.text;
-
-      if (name.isEmpty || email.isEmpty || pass.isEmpty || confirm.isEmpty) {
-        Get.snackbar(
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-          'Error',
-          'Please fill all fields',
-          snackPosition: SnackPosition.TOP,
-        );
-        return;
-      }
-      if (pass != confirm) {
-        Get.snackbar(
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-          'Error',
-          'Passwords do not match',
-          snackPosition: SnackPosition.TOP,
-        );
-        return;
-      }
-
-      // perform registration logic here
-      Get.toNamed('/home');
-    }
 
     return Scaffold(
       backgroundColor: Colors.blue,
@@ -132,7 +198,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: nameController,
+                          controller: _nameController,
                           keyboardType: TextInputType.name,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.person),
@@ -153,7 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: emailController,
+                          controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.mail),
@@ -167,6 +233,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 14),
 
+                        // Phone Number
+                        const Text(
+                          'Phone Number',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          maxLength: 10,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.phone),
+                            hintText: 'Enter your phone number',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                        ),
+
                         // Password
                         const Text(
                           'Password',
@@ -174,7 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: _userPassworController,
+                          controller: _passwordController,
                           obscureText: !_passwordVisible,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.lock),
@@ -207,7 +294,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: confirmController,
+                          controller: _confirmController,
                           obscureText: !_passwordVisible,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.lock_outline),
@@ -231,14 +318,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: _onRegister,
-                            child: const Text(
-                              'REGISTER',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
+                            onPressed: _isLoading ? null : _onRegister,
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'REGISTER',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -253,46 +344,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: const Text(
                                 'Sign In',
                                 style: TextStyle(color: Colors.blue),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // More actions / social or extra info
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                'Or continue with',
-                                style: TextStyle(color: Colors.black54),
-                              ),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.facebook,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.g_mobiledata,
-                                color: Colors.red,
                               ),
                             ),
                           ],

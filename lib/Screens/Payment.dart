@@ -21,7 +21,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Map<String, Product> productCarts = {};
   Map<String, int> productAmounts = {};
 
-  // For undo support
   String? _lastRemovedId;
   Product? _lastRemovedProduct;
   int? _lastRemovedAmount;
@@ -32,7 +31,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     loadCartFromCache();
   }
 
-  /// 🔹 Load cart data from cache
   Future<void> loadCartFromCache() async {
     final cacheManager = DefaultCacheManager();
     final cachedFile = await cacheManager.getFileFromCache('cart.json');
@@ -41,19 +39,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final jsonString = await cachedFile.file.readAsString();
       final Map<String, dynamic> data = jsonDecode(jsonString);
 
-      // Restore productCarts
       productCarts = (data['carts'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(key, Product.fromJson(value)),
       );
 
-      // Restore productAmounts
       productAmounts = (data['amounts'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(key, value as int),
       );
     }
 
     setState(() {
-      isLoading = false; // finished loading
+      isLoading = false;
     });
   }
 
@@ -65,12 +61,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
-  /// 🔹 Save cart to cache
   Future<void> saveCartToCache() async {
     try {
       final Map<String, dynamic> data = {
         'carts': productCarts.map((k, v) {
-          // assumes Product has toJson()
           return MapEntry(k, v.toJson());
         }),
         'amounts': productAmounts,
@@ -83,11 +77,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         fileExtension: 'json',
       );
     } catch (e) {
-      // swallow for now or log
+      print('Error saving cart to cache: $e');
     }
   }
 
-  /// 🔹 Remove item with undo capability
   void _removeItem(String productId) {
     if (!productCarts.containsKey(productId)) return;
     setState(() {
@@ -173,6 +166,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         return Dismissible(
           key: ValueKey(productId),
+          onDismissed: (direction) {
+            _removeItem(productId);
+          },
           child: Card(
             color: Colors.white,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -327,7 +323,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                             foregroundColor: Colors.red,
                                           ),
                                           onPressed: () {
-                                            // remove item and close sheet
                                             Navigator.of(context).pop();
                                             _removeItem(productId);
                                           },
@@ -368,7 +363,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   " \$${(product.price * quantity).toStringAsFixed(2)} ",
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text("\$${product.price.toStringAsFixed(2)} each"),
+                subtitle: Text("\$${product.price.toStringAsFixed(2)}"),
               ),
             ),
           ),
@@ -377,24 +372,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  /// 🔹 Summary bar with total price
-  // fake payment state
   bool _isProcessing = false;
   String? _selectedPaymentMethod;
   Widget _buildSummaryBar(BuildContext context, double totalPrice) {
-    // Example calculation for subtotal and tax
-    final double tax = totalPrice * 0.07; // Assuming 7% tax
+    final double tax = totalPrice * 0.07;
     final double subtotal = totalPrice - tax;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      // CHANGED: Use a fraction of the screen height for responsiveness
       height: MediaQuery.of(context).size.height * 0.5,
       curve: Curves.easeInOut,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: const BoxDecoration(
-          // ... decoration remains the same
           color: Colors.white,
           boxShadow: [
             BoxShadow(
@@ -411,14 +401,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ADDED: Wrap the scrollable content in Expanded
             Expanded(
-              // ADDED: Make the content scrollable
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Payment Summary Section (no changes here)
                     const Text(
                       'Payment Summary',
                       style: TextStyle(
@@ -464,7 +451,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // 2. Payment Method Section (no changes here)
                     const Text(
                       'Payment Method',
                       style: TextStyle(
@@ -503,14 +489,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: Colors.blue, // Or your theme's primary color
+                  backgroundColor: Colors.blue,
                 ),
                 onPressed: (_selectedPaymentMethod == null || _isProcessing)
-                    ? null // Disable if no method is selected OR if processing
+                    ? null
                     : () {
                         _handlePaymentProcessing(totalPrice);
                       },
-                // CHANGED: Show a loading indicator when processing
                 child: _isProcessing
                     ? const SizedBox(
                         height: 22,
@@ -603,7 +588,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _isProcessing = false;
     });
 
-
     Get.snackbar(
       'Success',
       'Payment of \$${totalPrice.toStringAsFixed(2)} was completed successfully!',
@@ -618,7 +602,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final finalPaymentMethod = _selectedPaymentMethod!;
 
     deleteCache();
-    
+
     Get.to(
       () => BillingScreen(
         productCarts: finalCart,
@@ -626,7 +610,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         totalPrice: totalPrice,
         selectedPaymentMethod: finalPaymentMethod,
       ),
-      transition: Transition.downToUp, // Optional: nice transition
+      transition: Transition.downToUp,
     );
   }
 }

@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test1/Components/AppBar.dart';
+import 'package:test1/Controllers/AuthController.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  
   @override
   Widget build(BuildContext context) {
     // 1. ADD the appBar property to the Scaffold
@@ -18,9 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
         title: "Pos | Panel",
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black),
+            icon: const Icon(Icons.notifications, color: Colors.black),
             onPressed: () {
-              Get.toNamed('/login');
+              Get.toNamed("/notifications");
             },
           ),
         ],
@@ -60,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.blue,
                                 ),
                                 const SizedBox(height: 12),
-                                Text('Shop', style: TextStyle(fontSize: 16),),
+                                Text('Shop', style: TextStyle(fontSize: 16)),
                               ],
                             ),
                           ),
@@ -112,7 +116,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.green,
                                 ),
                                 const SizedBox(height: 12),
-                                Text('Promotions', style: TextStyle(fontSize: 16)),
+                                Text(
+                                  'Promotions',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ],
                             ),
                           ),
@@ -138,7 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.purple,
                                 ),
                                 const SizedBox(height: 12),
-                                Text('Memberships', style: TextStyle(fontSize: 16)),
+                                Text(
+                                  'Memberships',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ],
                             ),
                           ),
@@ -164,7 +174,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.orange,
                                 ),
                                 const SizedBox(height: 12),
-                                Text('Settings', style: TextStyle(fontSize: 16)),
+                                Text(
+                                  'Settings',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ],
                             ),
                           ),
@@ -173,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     // Logout Card
                     GestureDetector(
-                      onTap: () => Get.toNamed('/login'),
+                      onTap: () => AuthController().logout(),
                       child: SizedBox(
                         width: 200,
                         height: 200,

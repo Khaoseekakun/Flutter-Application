@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import '../Controllers/AuthController.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,7 +13,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _passwordVisible = false;
-  final TextEditingController _userPassworController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  final authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -18,8 +25,66 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordVisible = false;
   }
 
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      Get.snackbar("Error", "Please fill in both fields",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade400,
+          colorText: Colors.white);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://45.154.27.155:5179/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['token'] != null) {
+          await authController.login(data['token'], int.parse(data['user_id']));
+
+          Get.offAllNamed('/home');
+          Get.snackbar("Success", "Logged in successfully!",
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.green.shade400,
+              colorText: Colors.white);
+        } else {
+          Get.snackbar("Error", "Invalid response from server",
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.red.shade400,
+              colorText: Colors.white);
+        }
+      } else {
+        final errorMessage = jsonDecode(response.body)['message'] ?? 'Login failed';
+        Get.snackbar("Error", errorMessage,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red.shade400,
+            colorText: Colors.white);
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Failed to connect to server: $e",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade400,
+          colorText: Colors.white);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final emailController = TextEditingController();
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -28,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
         bottom: false,
         child: Stack(
           children: [
+            // --- Logo ---
             Positioned(
               top: 100,
               left: (size.width - 120) / 2,
@@ -46,6 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+
+            // --- Login Form ---
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 150.0, end: 0.0),
               duration: const Duration(milliseconds: 650),
@@ -97,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: emailController,
+                          controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.mail),
@@ -118,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: _userPassworController,
+                          controller: _passwordController,
                           obscureText: !_passwordVisible,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.lock),
@@ -144,7 +212,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Forgot password
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
@@ -155,9 +222,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 8),
 
+                        // Login Button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -168,22 +235,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: () {
-                              // perform login
-                              Get.toNamed('/home');
-                            },
-                            child: const Text(
-                              'LOGIN',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
+                            onPressed: _isLoading ? null : _login,
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'LOGIN',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
+
                         const SizedBox(height: 12),
 
-                        // Register button (outline)
+                        // Register Button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -203,46 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // More actions / social or extra info
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                'Or continue with',
-                                style: TextStyle(color: Colors.black54),
-                              ),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.facebook,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.g_mobiledata,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),

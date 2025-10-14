@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "75063445743",
+    "project_id": "pos-app-fc051",
+    "storage_bucket": "pos-app-fc051.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75063445743:android:12de5b504d3df2a59df31a",
+        "android_client_info": {
+          "package_name": "com.sinsamuth.pos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnmAeqmczE4vCycXhEokA8zxQDJEveQtQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -36,21 +36,14 @@ class AuthController extends GetxController {
     final fcmService = Get.find<FCMService>();
     int userId = await authController.getUserId();
     if (userId == -1) {
-      debugPrint('User ID not found. Cannot save FCM token.');
-      Get.snackbar('FCM Token', 'User ID not found. Cannot save FCM token.');
       return;
     }
-    Get.snackbar('FCM Token', 'Retrieving FCM Token...');
     String fcmToken = await fcmService.getFCMToken();
-    Get.snackbar('FCM Token', 'FCM Token retrieved: $fcmToken');
     String deviceInfo = await getDeviceId();
-    Get.snackbar('Device Info', 'Device ID: $deviceInfo');
     if (fcmToken.isNotEmpty) {
       await authController.saveFCMToken(userId, fcmToken, deviceInfo);
-      debugPrint('FCM Token saved to user profile.');
     } else {
       debugPrint('Failed to retrieve FCM Token.');
-      Get.snackbar('FCM Token', 'Failed to retrieve FCM Token.');
     }
   }
 

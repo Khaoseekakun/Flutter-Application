@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get/state_manager.dart';
 import 'package:http/http.dart' as http;
@@ -28,7 +29,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> LoadNotification() async {
     final response = await http.get(
-      Uri.parse('http://45.154.27.155:5179/api/notification'),
+      Uri.parse('${dotenv.env['API_URL']}/api/notification'),
     );
 
     if (response.statusCode == 200) {

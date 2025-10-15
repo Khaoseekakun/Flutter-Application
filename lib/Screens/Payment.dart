@@ -469,12 +469,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       icon: Icons.qr_code,
                       value: 'promptpay',
                     ),
-                    const SizedBox(height: 16),
-                    _buildPaymentOption(
-                      title: '**** **** **** 1234',
-                      icon: Icons.credit_card,
-                      value: 'credit_card',
-                    ),
                   ],
                 ),
               ),

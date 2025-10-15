@@ -33,8 +33,7 @@ class FCMService extends GetxService {
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       String? fcmToken = await _messaging.getToken();
       if (fcmToken != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('fcm_token', fcmToken);
+        
       }
     } else {
       debugPrint('User denied permission for notifications.');

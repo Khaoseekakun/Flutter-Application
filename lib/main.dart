@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test1/Controllers/AuthController.dart';
 import 'package:test1/Middleware/AuthMiddleware.dart';
 import 'package:test1/Screens/Notifications.dart';
@@ -27,9 +28,18 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await Firebase.initializeApp();
+
+  await Firebase.initializeApp(); 
+
+  String? fcm_token = await FirebaseMessaging.instance.getToken();
+
+  if(fcm_token != null){
+    //save to storage
+    
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('fcm_token', fcm_token);
+  }
 
   Get.put(AuthController());
   await Get.find<AuthController>().checkLoginStatus();

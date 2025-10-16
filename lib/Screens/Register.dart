@@ -77,7 +77,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // ✅ Registration successful
-        final data = jsonDecode(response.body);
+        // final data = jsonDecode(response.body);
 
         Get.snackbar(
           'Success',

@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:get/get.dart';
-import 'package:get/state_manager.dart';
 import 'package:http/http.dart' as http;
-import 'package:shadcn_ui/shadcn_ui.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:test1/Components/AppBar.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:test1/Interfaces/interface.Notification.dart';
 
 class NotificationScreen extends StatefulWidget {

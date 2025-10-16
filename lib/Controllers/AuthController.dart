@@ -52,7 +52,7 @@ class AuthController extends GetxController {
 
     if (Platform.isAndroid) {
       final info = await deviceInfo.androidInfo;
-      return info.id ?? info.fingerprint; // unique-ish ID
+      return info.id;
     } else if (Platform.isIOS) {
       final info = await deviceInfo.iosInfo;
       return info.identifierForVendor ?? 'unknown';

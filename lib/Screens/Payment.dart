@@ -3,10 +3,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:test1/Components/AppBar.dart';
 import 'package:test1/Interfaces/interface.ProductsData.dart';
-import 'package:test1/Screens/Billing.dart';
+import 'package:test1/Screens/PaymentProcess.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -576,35 +579,124 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _isProcessing = true;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final apiUrl = dotenv.env['API_URL'];
+      if (apiUrl == null || apiUrl.isEmpty) {
+        throw Exception('API_URL is not configured');
+      }
 
-    setState(() {
-      _isProcessing = false;
-    });
+      // Load JWT token for authorized requests
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null || token.isEmpty) {
+        setState(() => _isProcessing = false);
+        Get.snackbar(
+          'Not logged in',
+          'Please login before making a payment.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red[300],
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
 
-    Get.snackbar(
-      'Success',
-      'Payment of \$${totalPrice.toStringAsFixed(2)} was completed successfully!',
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: Colors.green[300],
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-    );
+      // Build order IDs from cart
+      final List<int> orderIds = [];
+      productCarts.forEach((key, product) {
+        final qty = productAmounts[key] ?? 0;
+        if (qty > 0) {
+          orderIds.add(product.id);
+        }
+      });
 
-    final finalCart = Map<String, Product>.from(productCarts);
-    final finalAmounts = Map<String, int>.from(productAmounts);
-    final finalPaymentMethod = _selectedPaymentMethod!;
+      final body = <String, dynamic>{
+        'amount': totalPrice,
+        'currency': 'thb',
+        'order_ids': orderIds,
+        'code': _selectedPaymentMethod,
+        // 'email': ..., 'name': ... // add if you have them
+      };
 
-    deleteCache();
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/payments'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
 
-    Get.to(
-      () => BillingScreen(
-        productCarts: finalCart,
-        productAmounts: finalAmounts,
-        totalPrice: totalPrice,
-        selectedPaymentMethod: finalPaymentMethod,
-      ),
-      transition: Transition.downToUp,
-    );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+
+      
+        String message = 'Payment creation failed (${response.statusCode}).';
+        try {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          if (data['message'] != null) message = data['message'].toString();
+        } catch (_) {}
+        print("${message}");
+        setState(() => _isProcessing = false);
+        Get.snackbar(
+          'Payment Error',
+          message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red[300],
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final qrUrl = (data['qrcode_url'] ?? data['qr_code_url'])?.toString();
+      final sessionId = data['payment_session_id']?.toString();
+
+      if (qrUrl == null || qrUrl.isEmpty || sessionId == null) {
+        setState(() => _isProcessing = false);
+        Get.snackbar(
+          'Payment Error',
+          'Invalid response from server.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red[300],
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
+
+      setState(() => _isProcessing = false);
+
+      // Hand off to PaymentProcess screen with initial session + QR
+      final finalCart = Map<String, Product>.from(productCarts);
+      final finalAmounts = Map<String, int>.from(productAmounts);
+      final finalPaymentMethod = _selectedPaymentMethod!;
+
+      Get.to(
+        () => PaymentProcessScreen(
+          productCarts: finalCart,
+          productAmounts: finalAmounts,
+          totalPrice: totalPrice,
+          selectedPaymentMethod: finalPaymentMethod,
+          onPaymentSuccess: () async {
+            await deleteCache();
+          },
+          initialQrCodeUrl: qrUrl,
+          initialPaymentSessionId: sessionId,
+        ),
+        transition: Transition.downToUp,
+      );
+    } catch (e) {
+      setState(() => _isProcessing = false);
+      Get.snackbar(
+        'Payment Error',
+        'Failed to start payment. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red[300],
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
   }
 }

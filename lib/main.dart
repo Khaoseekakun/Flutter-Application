@@ -6,7 +6,9 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test1/Controllers/AuthController.dart';
 import 'package:test1/Middleware/AuthMiddleware.dart';
+import 'package:test1/Screens/AddProducts.dart';
 import 'package:test1/Screens/Notifications.dart';
+import 'package:test1/Screens/SelectProductAction.dart';
 import 'package:test1/Utils/FCMService.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Screens (Minimal Placeholders)
@@ -17,6 +19,7 @@ import 'Screens/Home.dart';
 import 'Screens/Shop.dart';
 import 'Screens/Settings.dart';
 import 'Screens/UiScreen.dart';
+import 'Screens/ProductsList.dart';
 import 'Screens/Payment.dart';
 
 @pragma('vm:entry-point')
@@ -30,13 +33,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await Firebase.initializeApp(); 
+  await Firebase.initializeApp();
 
   String? fcm_token = await FirebaseMessaging.instance.getToken();
 
-  if(fcm_token != null){
+  if (fcm_token != null) {
     //save to storage
-    
+
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('fcm_token', fcm_token);
   }
@@ -123,6 +126,26 @@ class _Application extends State<Application> {
               page: () => const PaymentScreen(),
               customTransition: FadeScaleTransition(),
               middlewares: [AuthMiddleware()],
+            ),
+            GetPage(
+              name: '/add_product',
+              page: () => const AddProductsScreen(),
+              customTransition: FadeScaleTransition(),
+              middlewares: [AuthMiddleware()],
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/product_list',
+              page: () => const ProductsListScreen(),
+              customTransition: FadeScaleTransition(),
+              middlewares: [AuthMiddleware()],
+              transition: Transition.rightToLeft,
+            ),
+            GetPage(
+              name: '/select_product_action',
+              page: () => const SelectProductAction(),
+              middlewares: [AuthMiddleware()],
+              transition: Transition.rightToLeft,
             ),
           ],
 

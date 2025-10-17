@@ -1,16 +1,22 @@
 # test1
 
-A new Flutter project.
+โปรเจ็คทดสอบสำหรับต่อยอดการพัฒนาแอป Flutter ที่เชื่อมต่อกับ API ภายนอก, Firebase และระบบรับชำระเงิน ด้วยสถาปัตยกรรมที่ใช้ `GetX` เป็นตัวจัดการเส้นทางและสถานะหลัก
 
-## Getting Started
+## ฟีเจอร์หลักที่มีอยู่ปัจจุบัน
+- **การยืนยันตัวตน**: หน้าจอ `Login`, `Register`, `ForgotPassword` ทำงานร่วมกับ `AuthController` เพื่อเก็บโทเคนด้วย `SharedPreferences`, ตรวจสอบสถานะล็อกอิน และจัดการบันทึก/ลบ FCM token ของผู้ใช้
+- **ระบบสินค้า**: หน้าจอ `ProductsListScreen` ดึงข้อมูลสินค้าจาก `${API_URL}/api/products`, มีฟิลเตอร์ค้นหา, refresh, ปรับมุมมองรายการ และเรียกเมนูแก้ไข/ลบ ขณะที่ `AddProductsScreen` และ `SelectProductAction` ใช้สำหรับสร้างสินค้าหรือเลือกการจัดการอื่นๆ
+- **แจ้งเตือนแบบพุช**: ผูกกับ Firebase Cloud Messaging (`FCMService`) ทั้งใน `main.dart` และ `AuthController` มีตัวจัดการข้อความพื้นหลัง `_firebaseMessagingBackgroundHandler` และขั้นตอนบันทึก token ต่อผู้ใช้บนเซิร์ฟเวอร์
+- **ชำระเงิน**: หน้าจอ `PaymentScreen` โหลดตะกร้าจาก cache (`DefaultCacheManager`), คำนวณยอดรวม, เลือกช่องทางชำระ, ส่งคำสั่งไป `${API_URL}/api/payments`, แล้วนำไป `PaymentProcessScreen` เพื่อแสดง QR และติดตามสถานะการชำระเงิน
+- **โครงร่าง UI หลัก**: `main.dart` กำหนด `GetMaterialApp` พร้อมเส้นทางหลัก (`/home`, `/shop`, `/settings`, `/ui`, `/payment` ฯลฯ) และ middleware `AuthMiddleware` เพื่อบังคับล็อกอินก่อนเข้าหน้าปกป้อง
+- **องค์ประกอบอื่นๆ**: รวมถึงหน้า `Notifications` สำหรับแสดงรายการแจ้งเตือน, `Panel` สำหรับส่วน UI ซ้ำใช้งาน, พร้อมตัวอย่างหน้าหลายชุด (เช่น `Home`, `Shop`, `Settings`) ที่จะถูกเติมเนื้อหาเพิ่มเติมภายหลัง
 
-This project is a starting point for a Flutter application.
+## การตั้งค่าเบื้องต้นที่ต้องมี
+- สร้างไฟล์ `.env` เพื่อกำหนดค่าพื้นฐาน เช่น `API_URL`, คีย์ Firebase และข้อมูลอื่นที่เกี่ยวข้อง
+- ติดตั้งและตั้งค่า Firebase (Android/iOS) ให้เรียบร้อยตามขั้นตอนมาตรฐานของ Flutter
+- รันคำสั่งพื้นฐานก่อนเริ่มพัฒนา
+  ```bash
+  flutter pub get
+  flutter run
+  ```
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+โค้ดทั้งหมดตั้งใจใช้เป็นฐานในการทดลองโฟลว์จริง ทั้งการล็อกอิน, ดึงข้อมูลสินค้าจริง, รับการแจ้งเตือน และสร้างคำสั่งชำระเงิน เพื่อให้ทีมสามารถต่อยอดหรือทดสอบบริการภายในได้อย่างรวดเร็ว

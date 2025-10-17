@@ -69,7 +69,7 @@ class BillingScreen extends StatelessWidget {
               return ListTile(
                 visualDensity: VisualDensity.compact,
                 leading: Text('x$quantity', style: const TextStyle(fontSize: 16)),
-                title: Text(product.title),
+                title: Text(product.name),
                 trailing: Text(
                   '\$${(product.price * quantity).toStringAsFixed(2)}',
                   style: const TextStyle(fontWeight: FontWeight.w500),

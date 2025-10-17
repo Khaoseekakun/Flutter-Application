@@ -163,11 +163,13 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
     });
   }
 
-  Future<void> _checkPaymentStatus() async {
+  Future<void> _cancelPayment() async {
     final sessionId = _paymentSessionId;
     final apiUrl = dotenv.env['API_URL'];
-
     if (sessionId == null || apiUrl == null || apiUrl.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null || token.isEmpty) return;
 
     try {
       // Get saved JWT token for authorized request
@@ -175,7 +177,7 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
       final token = prefs.getString('token');
       if (token == null || token.isEmpty) return;
 
-      final response = await http.get(
+      final response = await http.delete(
         Uri.parse('$apiUrl/api/payments/$sessionId'),
         headers: {
           'Content-Type': 'application/json',
@@ -190,19 +192,86 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final status = (data['status'] ?? data['payment_status'])?.toString().toLowerCase();
+      final status = (data['status'] ?? data['payment_status'])
+          ?.toString()
+          .toLowerCase();
+
+      if (status == null) {
+        return;
+      }
+
+      if (status == "canceled") {
+        Get.snackbar(
+          'Payment',
+          'ยกเลิกการชำระเงินสำเร็จ',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade400,
+          colorText: Colors.white,
+        );
+        Get.back();
+      } else {
+        Get.snackbar(
+          'Payment',
+          'ไม่สามารถยกเลิกการชำระเงินได้',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade400,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error checking payment status: $e');
+    }
+  }
+
+  Future<void> _checkPaymentStatus() async {
+    final sessionId = _paymentSessionId;
+    final apiUrl = dotenv.env['API_URL'];
+
+    if (sessionId == null || apiUrl == null || apiUrl.isEmpty) return;
+
+    try {
+      // Get saved JWT token for authorized request
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null || token.isEmpty) return;
+
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/payments/$sessionId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Payment status check failed: ${response.statusCode}');
+        return;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final status = (data['status'] ?? data['payment_status'])
+          ?.toString()
+          .toLowerCase();
 
       if (status == null) {
         return;
       }
 
       // Stripe PaymentIntent success state is 'succeeded'
-      if (status == 'succeeded' || status == 'success' || status == 'paid' || status == 'completed') {
+      if (status == 'succeeded' ||
+          status == 'success' ||
+          status == 'paid' ||
+          status == 'completed') {
         _pollingTimer?.cancel();
         await _handlePaymentSuccess();
-      } else if (status == 'failed' || status == 'cancelled' || status == 'canceled') {
+      } else if (status == 'failed' ||
+          status == 'cancelled' ||
+          status == 'canceled') {
         _pollingTimer?.cancel();
         if (!mounted) return;
+        
+        Get.back();
         setState(() {
           _hasError = true;
           _statusMessage = 'Payment $status. Please try again.';
@@ -235,12 +304,14 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
       colorText: Colors.white,
     );
 
-    Get.off(() => BillingScreen(
-          productCarts: widget.productCarts,
-          productAmounts: widget.productAmounts,
-          totalPrice: widget.totalPrice,
-          selectedPaymentMethod: widget.selectedPaymentMethod,
-        ));
+    Get.off(
+      () => BillingScreen(
+        productCarts: widget.productCarts,
+        productAmounts: widget.productAmounts,
+        totalPrice: widget.totalPrice,
+        selectedPaymentMethod: widget.selectedPaymentMethod,
+      ),
+    );
   }
 
   String _extractErrorMessage(String responseBody) {
@@ -337,7 +408,7 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () {
-                    Get.back();
+                    _cancelPayment();
                   },
                   icon: const Icon(Icons.close),
                   label: const Text('Cancel Payment'),

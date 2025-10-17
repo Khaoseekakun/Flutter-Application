@@ -599,9 +599,9 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
 
     Uri? uri;
     if (product.productId != null) {
-      uri = Uri.parse('$apiUrl/api/products/${product.productId}/stock');
+      uri = Uri.parse('$apiUrl/api/products/${product.productId}');
     } else {
-      uri = Uri.parse('$apiUrl/api/products/sku/${product.sku}/stock');
+      uri = Uri.parse('$apiUrl/api/products/sku/${product.sku}');
     }
 
     final http.Response response = await http.put(

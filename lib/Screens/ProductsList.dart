@@ -72,19 +72,19 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
       );
 
       if (response.statusCode != 200) {
-        throw Exception(
-          'Failed to load products (${response.statusCode}).',
-        );
+        throw Exception('Failed to load products (${response.statusCode}).');
       }
 
       final dynamic body = jsonDecode(response.body);
-      final List<dynamic> items =
-          body is List ? body : (body['data'] as List<dynamic>? ?? <dynamic>[]);
+      final List<dynamic> items = body is List
+          ? body
+          : (body['data'] as List<dynamic>? ?? <dynamic>[]);
 
       final List<InventoryProduct> products = items
-          .map((dynamic item) => InventoryProduct.fromJson(
-                item as Map<String, dynamic>,
-              ))
+          .map(
+            (dynamic item) =>
+                InventoryProduct.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
 
       if (!mounted) return;
@@ -226,32 +226,39 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
 
   Future<void> _showEditDialog(InventoryProduct product) async {
     final formKey = GlobalKey<FormState>();
-    final TextEditingController nameController =
-        TextEditingController(text: product.name ?? '');
-    final TextEditingController shortDescController =
-        TextEditingController(text: product.shortDesc ?? '');
-    final TextEditingController descController =
-        TextEditingController(text: product.description ?? '');
+    final TextEditingController nameController = TextEditingController(
+      text: product.name ?? '',
+    );
+    final TextEditingController shortDescController = TextEditingController(
+      text: product.shortDesc ?? '',
+    );
+    final TextEditingController descController = TextEditingController(
+      text: product.description ?? '',
+    );
     final TextEditingController priceController = TextEditingController(
       text: product.price != null ? product.price!.toStringAsFixed(2) : '',
     );
-    final TextEditingController currencyController =
-        TextEditingController(text: product.currency ?? 'THB');
+    final TextEditingController currencyController = TextEditingController(
+      text: product.currency ?? 'THB',
+    );
     final TextEditingController stockController = TextEditingController(
       text: product.stockQuantity.toString(),
     );
     final TextEditingController categoryController = TextEditingController(
       text: product.categoryId?.toString() ?? '',
     );
-    final TextEditingController vendorController =
-        TextEditingController(text: product.vendor ?? '');
+    final TextEditingController vendorController = TextEditingController(
+      text: product.vendor ?? '',
+    );
     final TextEditingController weightController = TextEditingController(
       text: product.weightKg?.toString() ?? '',
     );
-    final TextEditingController dimensionsController =
-        TextEditingController(text: product.dimensions ?? '');
-    final TextEditingController metadataController =
-        TextEditingController(text: product.metadata ?? '');
+    final TextEditingController dimensionsController = TextEditingController(
+      text: product.dimensions ?? '',
+    );
+    final TextEditingController metadataController = TextEditingController(
+      text: product.metadata ?? '',
+    );
     final TextEditingController imagesController = TextEditingController(
       text: product.images.join('\n'),
     );
@@ -297,8 +304,8 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                           ),
                           validator: (String? value) =>
                               value == null || value.trim().isEmpty
-                                  ? 'Enter product name'
-                                  : null,
+                              ? 'Enter product name'
+                              : null,
                         ),
                         TextFormField(
                           controller: shortDescController,
@@ -316,17 +323,14 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                         TextFormField(
                           controller: priceController,
                           decoration: const InputDecoration(labelText: 'Price'),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           validator: (String? value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Enter price';
                             }
-                            return double.tryParse(
-                                      value.replaceAll(',', ''),
-                                    ) ==
+                            return double.tryParse(value.replaceAll(',', '')) ==
                                     null
                                 ? 'Invalid price'
                                 : null;
@@ -343,8 +347,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Stock Quantity',
                           ),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: false,
                           ),
                           validator: (String? value) {
@@ -361,23 +364,22 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Category Id',
                           ),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: false,
                           ),
                         ),
                         TextFormField(
                           controller: vendorController,
-                          decoration:
-                              const InputDecoration(labelText: 'Vendor'),
+                          decoration: const InputDecoration(
+                            labelText: 'Vendor',
+                          ),
                         ),
                         TextFormField(
                           controller: weightController,
                           decoration: const InputDecoration(
                             labelText: 'Weight (kg)',
                           ),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                         ),
@@ -436,14 +438,11 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                                   priceController.text.replaceAll(',', ''),
                                 ),
                                 currency: currencyController.text.trim(),
-                                stock: int.parse(
-                                  stockController.text.trim(),
-                                ),
-                                categoryId: categoryController.text.trim().isEmpty
+                                stock: int.parse(stockController.text.trim()),
+                                categoryId:
+                                    categoryController.text.trim().isEmpty
                                     ? null
-                                    : int.parse(
-                                        categoryController.text.trim(),
-                                      ),
+                                    : int.parse(categoryController.text.trim()),
                                 vendor: vendorController.text.trim(),
                                 weightKg: weightController.text.trim().isEmpty
                                     ? null
@@ -486,7 +485,9 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         },
       );
     } finally {
-      disposeControllers();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        disposeControllers();
+      });
     }
 
     if (dialogResult == true) {
@@ -551,8 +552,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null && token.isNotEmpty)
-          'Authorization': 'Bearer $token',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode(payload),
     );
@@ -569,8 +569,9 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
 
     final Map<String, dynamic> updatedJson =
         jsonDecode(response.body) as Map<String, dynamic>;
-    final InventoryProduct updatedProduct =
-        InventoryProduct.fromJson(updatedJson);
+    final InventoryProduct updatedProduct = InventoryProduct.fromJson(
+      updatedJson['product'],
+    );
 
     if (!mounted) return;
 
@@ -612,9 +613,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search),
           hintText: 'Search by name, SKU, or vendor',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -632,12 +631,13 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-              const SizedBox(height: 12),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
+              const Icon(
+                Icons.error_outline,
+                color: Colors.redAccent,
+                size: 48,
               ),
+              const SizedBox(height: 12),
+              Text(_errorMessage!, textAlign: TextAlign.center),
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () => _fetchProducts(),
@@ -685,8 +685,9 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
   }
 
   Widget _buildProductCard(InventoryProduct product) {
-    final String? imageUrl =
-        product.images.isNotEmpty ? product.images.first : null;
+    final String? imageUrl = product.images.isNotEmpty
+        ? product.images.first
+        : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -702,15 +703,19 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                   width: 64,
                   height: 64,
                   fit: BoxFit.cover,
-                  errorBuilder: (BuildContext context, Object error,
-                      StackTrace? stackTrace) {
-                    return Container(
-                      width: 64,
-                      height: 64,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image_not_supported),
-                    );
-                  },
+                  errorBuilder:
+                      (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) {
+                        return Container(
+                          width: 64,
+                          height: 64,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image_not_supported),
+                        );
+                      },
                 )
               : Container(
                   width: 64,
@@ -748,10 +753,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
           itemBuilder: (BuildContext context) => [
             const PopupMenuItem<String>(
               value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
-              ),
+              child: ListTile(leading: Icon(Icons.edit), title: Text('Edit')),
             ),
             const PopupMenuItem<String>(
               value: 'delete',
@@ -774,8 +776,9 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         actions: [
           IconButton(
             tooltip: 'Refresh',
-            onPressed:
-                _isLoading || _isRefreshing ? null : () => _fetchProducts(),
+            onPressed: _isLoading || _isRefreshing
+                ? null
+                : () => _fetchProducts(),
             icon: _isRefreshing
                 ? const SizedBox(
                     width: 18,

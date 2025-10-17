@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test1/Components/AppBar.dart';
-import 'package:test1/Controllers/AuthController.dart';
 
 class SelectProductAction extends StatefulWidget {
   const SelectProductAction({super.key});

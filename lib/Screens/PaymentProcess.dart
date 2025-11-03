@@ -310,6 +310,7 @@ class _PaymentProcessScreenState extends State<PaymentProcessScreen> {
         productAmounts: widget.productAmounts,
         totalPrice: widget.totalPrice,
         selectedPaymentMethod: widget.selectedPaymentMethod,
+        payment_session_id: _paymentSessionId,
       ),
     );
   }

@@ -1,6 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:test1/Interfaces/interface.ProductsDimensions.dart';
-import 'package:test1/Interfaces/interface.ProductsMeta.dart';
 part 'interface.ProductsData.g.dart';
 
 @JsonSerializable()

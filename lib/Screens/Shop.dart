@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -26,7 +24,6 @@ class _ShopScreenState extends State<ShopScreen> {
   Map<String, int> productAmounts = {};
   Map<String, Product> productCarts = {};
   String _searchQuery = '';
-  final List<String> _quickFilters = const ['All', 'In Stock', 'Low Stock'];
   String _selectedFilter = 'All';
   bool _isRefreshing = false;
   String? _errorMessage;
@@ -81,7 +78,7 @@ class _ShopScreenState extends State<ShopScreen> {
       final query = _searchQuery.toLowerCase();
       items = items.where((product) {
         final name = product.name.toLowerCase();
-        final sku = (product.sku ?? '').toLowerCase();
+        final sku = (product.sku).toLowerCase();
         return name.contains(query) || sku.contains(query);
       });
     }
@@ -192,14 +189,6 @@ class _ShopScreenState extends State<ShopScreen> {
     });
   }
 
-  void _onFilterSelected(String label) {
-    if (_selectedFilter == label) return;
-    setState(() {
-      _selectedFilter = label;
-      filteredProducts = _computeFilteredProducts();
-    });
-  }
-
   Future<void> loadCartFromCache() async {
     final cacheManager = DefaultCacheManager();
     final cachedFile = await cacheManager.getFileFromCache('cart.json');
@@ -223,7 +212,7 @@ class _ShopScreenState extends State<ShopScreen> {
           loadedCarts[key] = Product.fromJson(value);
         } else if (value is Map) {
           loadedCarts[key] = Product.fromJson(
-            Map<String, dynamic>.from(value as Map),
+            Map<String, dynamic>.from(value),
           );
         }
       });
@@ -670,9 +659,9 @@ class _ShopScreenState extends State<ShopScreen> {
                       child: Container(
                         color: const Color(0xFFF9FAFB),
                         alignment: Alignment.center,
-                        child: product.images?.isNotEmpty == true
+                        child: product.images.isNotEmpty == true
                             ? Image.network(
-                                product.images!.first,
+                                product.images.first,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) =>
                                     const Icon(
@@ -749,7 +738,7 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'SKU ${product.sku ?? '-'}',
+              'SKU ${product.sku}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(

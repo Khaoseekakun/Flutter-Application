@@ -9,6 +9,7 @@ class BillingScreen extends StatelessWidget {
   final Map<String, int> productAmounts;
   final double totalPrice;
   final String selectedPaymentMethod;
+  final String? payment_session_id;
 
   const BillingScreen({
     super.key,
@@ -16,6 +17,7 @@ class BillingScreen extends StatelessWidget {
     required this.productAmounts,
     required this.totalPrice,
     required this.selectedPaymentMethod,
+    this.payment_session_id
   });
 
   @override
@@ -116,7 +118,7 @@ class BillingScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            _buildDetailRow('Transaction ID:', 'TXN${DateTime.now().millisecondsSinceEpoch}'),
+            _buildDetailRow('Transaction ID:', '${payment_session_id!.startsWith("pi") ? "" : "TXN"}${payment_session_id ?? 'N/A'}'),
             const SizedBox(height: 8),
             _buildDetailRow('Date:', DateFormat('d MMM yyyy, HH:mm').format(DateTime.now())),
             const SizedBox(height: 8),

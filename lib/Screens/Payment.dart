@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test1/Components/AppBar.dart';
 import 'package:test1/Interfaces/interface.ProductsData.dart';
+import 'package:test1/Screens/Billing.dart';
 import 'package:test1/Screens/PaymentProcess.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -80,9 +81,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (value is Map<String, dynamic>) {
           loadedCarts[key] = Product.fromJson(value);
         } else if (value is Map) {
-          loadedCarts[key] = Product.fromJson(
-            Map<String, dynamic>.from(value as Map),
-          );
+          loadedCarts[key] = Product.fromJson(Map<String, dynamic>.from(value));
         }
       });
 
@@ -406,7 +405,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget _buildCartItemCard(_CartLineItem item) {
     final product = item.product;
     final theme = Theme.of(context);
-    final hasImage = product.images?.isNotEmpty == true;
+    final hasImage = product.images.isNotEmpty == true;
     final bool canDecrease = item.quantity > 0;
     final bool canIncrease = product.stockQuantity <= 0
         ? false
@@ -437,7 +436,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: hasImage
                       ? Image.network(
-                          product.images!.first,
+                          product.images.first,
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
@@ -464,7 +463,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         spacing: 8,
                         runSpacing: 6,
                         children: [
-                          if (product.sku != null && product.sku!.isNotEmpty)
+                          if (product.sku.isNotEmpty)
                             _buildInfoChip('SKU ${product.sku}'),
                           _buildInfoChip('คงเหลือ ${product.stockQuantity}'),
                         ],
@@ -890,75 +889,167 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'code': _selectedPaymentMethod,
       };
 
-      final response = await http.post(
-        Uri.parse('$apiUrl/api/payments'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        String message =
-            'สร้างคำสั่งชำระเงินไม่สำเร็จ (${response.statusCode})';
-        try {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          if (data['message'] != null) {
-            message = data['message'].toString();
-          }
-        } catch (_) {}
-
-        setState(() => _isProcessing = false);
-        Get.snackbar(
-          'เกิดข้อผิดพลาด',
-          message,
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red[300],
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-        );
-        return;
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final qrUrl = (data['qrcode_url'] ?? data['qr_code_url'])?.toString();
-      final sessionId = data['payment_session_id']?.toString();
-
-      if (qrUrl == null || qrUrl.isEmpty || sessionId == null) {
-        setState(() => _isProcessing = false);
-        Get.snackbar(
-          'ข้อมูลไม่ถูกต้อง',
-          'ระบบไม่ได้รับ QR หรือ session สำหรับการชำระเงิน',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red[300],
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-        );
-        return;
-      }
-
-      setState(() => _isProcessing = false);
-
-      final finalCart = Map<String, Product>.from(productCarts);
-      final finalAmounts = Map<String, int>.from(productAmounts);
-      final finalMethod = _selectedPaymentMethod!;
-
-      Get.to(
-        () => PaymentProcessScreen(
-          productCarts: finalCart,
-          productAmounts: finalAmounts,
-          totalPrice: totalPrice,
-          selectedPaymentMethod: finalMethod,
-          onPaymentSuccess: () async {
-            await deleteCache();
-          },
-          initialQrCodeUrl: qrUrl,
-          initialPaymentSessionId: sessionId,
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('ยืนยันการชำระเงิน'),
+          content: Text(
+            'คุณต้องการสร้างคำสั่งชำระเงินจำนวน ${_formatMoney(totalPrice, 'THB')} ใช่หรือไม่?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('ยกเลิก'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('ยืนยัน'),
+            ),
+          ],
         ),
-        transition: Transition.downToUp,
       );
+
+      if (confirmed != true) {
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      if (_selectedPaymentMethod == 'promptpay') {
+        final response = await http.post(
+          Uri.parse('$apiUrl/api/payments'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        );
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          String message =
+              'สร้างคำสั่งชำระเงินไม่สำเร็จ (${response.statusCode})';
+          try {
+            final data = jsonDecode(response.body) as Map<String, dynamic>;
+            if (data['message'] != null) {
+              message = data['message'].toString();
+            }
+          } catch (_) {}
+
+          setState(() => _isProcessing = false);
+          Get.snackbar(
+            'เกิดข้อผิดพลาด',
+            message,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red[300],
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+          return;
+        }
+
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final qrUrl = (data['qrcode_url'] ?? data['qr_code_url'])?.toString();
+        final sessionId = data['payment_session_id']?.toString();
+
+        if (qrUrl == null || qrUrl.isEmpty || sessionId == null) {
+          setState(() => _isProcessing = false);
+          Get.snackbar(
+            'ข้อมูลไม่ถูกต้อง',
+            'ระบบไม่ได้รับ QR หรือ session สำหรับการชำระเงิน',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red[300],
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+          return;
+        }
+
+        setState(() => _isProcessing = false);
+
+        final finalCart = Map<String, Product>.from(productCarts);
+        final finalAmounts = Map<String, int>.from(productAmounts);
+        final finalMethod = _selectedPaymentMethod!;
+
+        Get.to(
+          () => PaymentProcessScreen(
+            productCarts: finalCart,
+            productAmounts: finalAmounts,
+            totalPrice: totalPrice,
+            selectedPaymentMethod: finalMethod,
+            onPaymentSuccess: () async {
+              await deleteCache();
+            },
+            initialQrCodeUrl: qrUrl,
+            initialPaymentSessionId: sessionId,
+          ),
+          transition: Transition.downToUp,
+        );
+      } else {
+        final response = await http.post(
+          Uri.parse('$apiUrl/api/payments/cash'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        );
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          String message = 'สร้างคำสั่งชำระเงินไม่สำเร็จ (${response.statusCode})';
+          try {
+            final data = jsonDecode(response.body) as Map<String, dynamic>;
+            if (data['message'] != null) {
+              message = data['message'].toString();
+            }
+          } catch (_) {}
+
+          setState(() => _isProcessing = false);
+          Get.snackbar(
+            'เกิดข้อผิดพลาด',
+            message,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red[300],
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+          return;
+        }
+
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final sessionId = data['payment_session_id']?.toString();
+
+        if (sessionId == null) {
+          setState(() => _isProcessing = false);
+          Get.snackbar(
+            'ข้อมูลไม่ถูกต้อง',
+            'ระบบไม่ได้รับ QR หรือ session สำหรับการชำระเงิน',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red[300],
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+          return;
+        }
+
+        setState(() => _isProcessing = false);
+
+        final finalCart = Map<String, Product>.from(productCarts);
+        final finalAmounts = Map<String, int>.from(productAmounts);
+        final finalMethod = _selectedPaymentMethod!;
+
+        Get.to(
+          () => BillingScreen(
+            productCarts: finalCart,
+            productAmounts: finalAmounts,
+            totalPrice: totalPrice,
+            selectedPaymentMethod: finalMethod,
+            payment_session_id: sessionId,
+          ),
+          transition: Transition.downToUp,
+        );
+      }
     } catch (e) {
       setState(() => _isProcessing = false);
       Get.snackbar(

@@ -22,6 +22,18 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
     detectionSpeed: DetectionSpeed.normal,
   );
   final TextEditingController _manualSkuController = TextEditingController();
+  final TextEditingController _createNameController = TextEditingController();
+  final TextEditingController _createShortDescController =
+      TextEditingController();
+  final TextEditingController _createDescController = TextEditingController();
+  final TextEditingController _createPriceController = TextEditingController();
+  final TextEditingController _createCurrencyController =
+      TextEditingController(text: 'THB');
+  final TextEditingController _createStockController =
+      TextEditingController(text: '0');
+  final TextEditingController _createCategoryController =
+      TextEditingController();
+  final TextEditingController _createVendorController = TextEditingController();
 
   bool _isHandlingBarcode = false;
   InventoryProduct? _lastProduct;
@@ -31,7 +43,26 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
   void dispose() {
     _scannerController.dispose();
     _manualSkuController.dispose();
+    _createNameController.dispose();
+    _createShortDescController.dispose();
+    _createDescController.dispose();
+    _createPriceController.dispose();
+    _createCurrencyController.dispose();
+    _createStockController.dispose();
+    _createCategoryController.dispose();
+    _createVendorController.dispose();
     super.dispose();
+  }
+
+  void _resetCreateProductControllers() {
+    _createNameController.clear();
+    _createShortDescController.clear();
+    _createDescController.clear();
+    _createPriceController.clear();
+    _createCurrencyController.text = 'THB';
+    _createStockController.text = '0';
+    _createCategoryController.clear();
+    _createVendorController.clear();
   }
 
   Future<void> _pauseCamera() async {
@@ -173,30 +204,14 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
 
   Future<bool> _showCreateProductDialog(String sku) async {
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final shortDescController = TextEditingController();
-    final descController = TextEditingController();
-    final priceController = TextEditingController();
-    final currencyController = TextEditingController(text: 'THB');
-    final stockController = TextEditingController(text: '0');
-    final categoryController = TextEditingController();
-    final vendorController = TextEditingController();
-
     bool isActive = true;
     bool isSubmitting = false;
     bool? dialogResult;
 
+    _resetCreateProductControllers();
     await _pauseCamera();
 
     if (!mounted) {
-      nameController.dispose();
-      shortDescController.dispose();
-      descController.dispose();
-      priceController.dispose();
-      currencyController.dispose();
-      stockController.dispose();
-      categoryController.dispose();
-      vendorController.dispose();
       await _resumeCameraIfIdle();
       return false;
     }
@@ -217,7 +232,7 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
-                          controller: nameController,
+                          controller: _createNameController,
                           decoration: const InputDecoration(
                             labelText: 'Product Name',
                           ),
@@ -227,20 +242,20 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                               : null,
                         ),
                         TextFormField(
-                          controller: shortDescController,
+                          controller: _createShortDescController,
                           decoration: const InputDecoration(
                             labelText: 'Short Description',
                           ),
                         ),
                         TextFormField(
-                          controller: descController,
+                          controller: _createDescController,
                           decoration: const InputDecoration(
                             labelText: 'Description',
                           ),
                           maxLines: 3,
                         ),
                         TextFormField(
-                          controller: priceController,
+                          controller: _createPriceController,
                           decoration: const InputDecoration(labelText: 'Price'),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
@@ -259,13 +274,13 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                           },
                         ),
                         TextFormField(
-                          controller: currencyController,
+                          controller: _createCurrencyController,
                           decoration: const InputDecoration(
                             labelText: 'Currency',
                           ),
                         ),
                         TextFormField(
-                          controller: stockController,
+                          controller: _createStockController,
                           decoration: const InputDecoration(
                             labelText: 'Initial Stock Quantity',
                           ),
@@ -284,7 +299,7 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                           },
                         ),
                         TextFormField(
-                          controller: categoryController,
+                          controller: _createCategoryController,
                           decoration: const InputDecoration(
                             labelText: 'Category Id',
                           ),
@@ -293,7 +308,7 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                           ),
                         ),
                         TextFormField(
-                          controller: vendorController,
+                          controller: _createVendorController,
                           decoration: const InputDecoration(
                             labelText: 'Vendor',
                           ),
@@ -326,36 +341,44 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
 
                             try {
                               final double price = double.parse(
-                                priceController.text.replaceAll(',', ''),
+                                _createPriceController.text
+                                    .replaceAll(',', ''),
                               );
                               final int stock = int.parse(
-                                stockController.text.trim(),
+                                _createStockController.text.trim(),
                               );
                               final int? categoryId = int.tryParse(
-                                categoryController.text.trim(),
+                                _createCategoryController.text.trim(),
                               );
 
                               final InventoryProduct
                               product = await _createProduct(
                                 sku: sku,
-                                name: nameController.text.trim(),
-                                shortDesc:
-                                    shortDescController.text.trim().isEmpty
+                                name: _createNameController.text.trim(),
+                                shortDesc: _createShortDescController.text
+                                        .trim()
+                                        .isEmpty
                                     ? null
-                                    : shortDescController.text.trim(),
-                                description: descController.text.trim().isEmpty
+                                    : _createShortDescController.text.trim(),
+                                description: _createDescController.text
+                                        .trim()
+                                        .isEmpty
                                     ? null
-                                    : descController.text.trim(),
+                                    : _createDescController.text.trim(),
                                 price: price,
-                                currency: currencyController.text.trim().isEmpty
+                                currency: _createCurrencyController.text
+                                        .trim()
+                                        .isEmpty
                                     ? 'THB'
-                                    : currencyController.text.trim(),
+                                    : _createCurrencyController.text.trim(),
                                 stock: stock,
                                 isActive: isActive,
                                 categoryId: categoryId,
-                                vendor: vendorController.text.trim().isEmpty
+                                vendor: _createVendorController.text
+                                        .trim()
+                                        .isEmpty
                                     ? null
-                                    : vendorController.text.trim(),
+                                    : _createVendorController.text.trim(),
                               );
 
                               if (mounted) {
@@ -366,6 +389,7 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
                                 Navigator.pop(dialogContext, true);
                               }
                             } catch (e) {
+                              // Log the error
                               setLocalState(() => isSubmitting = false);
                               Get.snackbar(
                                 'Create Failed',
@@ -392,15 +416,6 @@ class _AddProductsScreenState extends State<AddProductsScreen> {
         },
       );
     } finally {
-      nameController.dispose();
-      shortDescController.dispose();
-      descController.dispose();
-      priceController.dispose();
-      currencyController.dispose();
-      stockController.dispose();
-      categoryController.dispose();
-      vendorController.dispose();
-
       await _resumeCameraIfIdle();
     }
 
